@@ -20,6 +20,7 @@ function deleteCardById(req, res) {
     .orFail()
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
+      if (err.name === 'CastError') return res.status(400).send({ message: 'Переданы некорректные данные карточки.' });
       if (err.name === 'DocumentNotFoundError') return res.status(404).send({ message: 'Карточка с указанным _id не найдена.' });
       return res.status(500).send({ message: 'На сервере произошла ошибка' });
     });
