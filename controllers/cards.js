@@ -1,31 +1,30 @@
 const Card = require('../models/card');
 
-function getCards(req, res) {
+function getCards(req, res, next) {
   Card.find({})
     .then((cards) => res.status(200).send(cards))
-    .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
+    .catch(next);
 }
-function createCard(req, res) {
+function createCard(req, res, next) {
   const { name, link } = req.body;
   const owner = req.user._id;
   Card.create({ name, link, owner })
     .then((card) => res.status(201).send(card))
-    .catch((err) => {
-      if (err.name === 'ValidationError') return res.status(400).send({ message: 'Переданы некорректные данные при создании карточки.' });
-      return res.status(500).send({ message: 'На сервере произошла ошибка' });
-    });
+    .catch(next);
 }
-function deleteCardById(req, res) {
-  Card.findByIdAndRemove(req.params.id)
+function deleteCardById(req, res, next) {
+  const { _id } = req.user;
+  Card.findById(req.params.id)
     .orFail()
-    .then((card) => res.status(200).send({ data: card }))
-    .catch((err) => {
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Переданы некорректные данные карточки.' });
-      if (err.name === 'DocumentNotFoundError') return res.status(404).send({ message: 'Карточка с указанным _id не найдена.' });
-      return res.status(500).send({ message: 'На сервере произошла ошибка' });
-    });
+    .then((card) => {
+      if (_id !== JSON.stringify(card.owner).slice(1, -1)) throw new Error('Вы можете удалять только свои карточки');
+      Card.findByIdAndRemove(req.params.id)
+        .then(() => res.status(200).send({ data: card }))
+        .catch(next);
+    })
+    .catch(next);
 }
-function handleLike(req, res) {
+function handleLike(req, res, next) {
   Card.findByIdAndUpdate(
     req.params.id,
     { $addToSet: { likes: req.user._id } },
@@ -33,13 +32,9 @@ function handleLike(req, res) {
   )
     .orFail()
     .then((like) => res.send(like))
-    .catch((err) => {
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Переданы некорректные данные для постановки/снятии лайка.' });
-      if (err.name === 'DocumentNotFoundError') return res.status(404).send({ message: 'Передан несуществующий _id карточки.' });
-      return res.status(500).send({ message: 'На сервере произошла ошибка' });
-    });
+    .catch(next);
 }
-function removeLike(req, res) {
+function removeLike(req, res, next) {
   Card.findByIdAndUpdate(
     req.params.id,
     { $pull: { likes: req.user._id } },
@@ -47,11 +42,7 @@ function removeLike(req, res) {
   )
     .orFail()
     .then((like) => res.send(like))
-    .catch((err) => {
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Переданы некорректные данные для постановки/снятии лайка.' });
-      if (err.name === 'DocumentNotFoundError') return res.status(404).send({ message: 'Передан несуществующий _id карточки.' });
-      return res.status(500).send({ message: 'На сервере произошла ошибка' });
-    });
+    .catch(next);
 }
 
 module.exports = {

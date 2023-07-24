@@ -1,21 +1,54 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   name: {
     maxlength: 30,
     minlength: 2,
-    required: true,
     type: String,
+    default: 'Жак-Ив Кусто',
   },
   about: {
     maxlength: 30,
     minlength: 2,
-    required: true,
     type: String,
+    default: 'Исследователь',
   },
   avatar: {
-    required: true,
     type: String,
+    default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+  },
+  email: {
+    type: String,
+    require: true,
+    unique: true,
+    validate: {
+      validator: (v) => validator.isEmail(v),
+      message: 'Неверный Email',
+    },
+  },
+  password: {
+    require: true,
+    type: String,
+    select: false,
   },
 }, { versionKey: false });
+
+userSchema.statics.findUserByEmail = function (email, password) {
+  return this.findOne({ email })
+    .select('+password')
+    .then((user) => {
+      if (!user) {
+        return Promise.reject(new Error('Неправильная почта или пароль'));
+      }
+      return bcrypt.compare(password, user.password)
+        .then((mathed) => {
+          if (!mathed) {
+            return Promise.reject(new Error('Неправильная почта или пароль'));
+          }
+          return user;
+        });
+    });
+};
 module.exports = mongoose.model('user', userSchema);
