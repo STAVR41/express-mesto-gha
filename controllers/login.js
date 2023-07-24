@@ -6,7 +6,7 @@ function authentication(req, res, next) {
   return User.findUserByEmail(email, password)
     .then((login) => {
       const token = jwt.sign({ _id: login._id }, 'some-secret-key', { expiresIn: '7d' });
-      res.send({ message: 'Всё верно', token });
+      res.status(200).send({ message: 'Всё верно', token });
     })
     .catch(next);
 }
