@@ -15,7 +15,7 @@ function getCurrentUser(req, res, next) {
   const { _id } = req.user;
   User.findOne({ _id })
     .orFail()
-    .then((user) => res.send(user))
+    .then((user) => res.status(200).send(user))
     .catch(next);
 }
 function updateProfile(req, res, next) {
