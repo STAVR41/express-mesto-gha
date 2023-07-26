@@ -1,8 +1,11 @@
 const Card = require('../models/card');
+const ValidationError = require('../utils/errors/validationError');
+const ForbiddenError = require('../utils/errors/forbiddenError');
+const NotFoundError = require('../utils/errors/notFoundError');
 
 function getCards(req, res, next) {
   Card.find({})
-    .then((cards) => res.status(200).send(cards))
+    .then((cards) => res.send(cards))
     .catch(next);
 }
 function createCard(req, res, next) {
@@ -10,16 +13,18 @@ function createCard(req, res, next) {
   const owner = req.user._id;
   Card.create({ name, link, owner })
     .then((card) => res.status(201).send(card))
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError') return next(new ValidationError('Некорректные данные при создании карточки'));
+      return next(err);
+    });
 }
 function deleteCardById(req, res, next) {
   const { _id } = req.user;
   Card.findById(req.params.id)
-    .orFail()
     .then((card) => {
-      if (_id !== JSON.stringify(card.owner).slice(1, -1)) throw new Error('Вы можете удалять только свои карточки');
-      Card.findByIdAndRemove(req.params.id)
-        .then(() => res.status(200).send({ data: card }))
+      if (_id !== JSON.stringify(card.owner).slice(1, -1)) return next(new ForbiddenError('Вы можете удалять только свои карточки'));
+      return Card.findByIdAndRemove(req.params.id)
+        .then(() => res.send({ data: card }))
         .catch(next);
     })
     .catch(next);
@@ -30,9 +35,14 @@ function handleLike(req, res, next) {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
-    .orFail()
-    .then((like) => res.send(like))
-    .catch(next);
+    .then((card) => {
+      if (!card) return next(new NotFoundError('Карточка не найдена'));
+      return res.send(card);
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') return next(new ValidationError('Некорректные данные'));
+      return next(err);
+    });
 }
 function removeLike(req, res, next) {
   Card.findByIdAndUpdate(
@@ -40,9 +50,14 @@ function removeLike(req, res, next) {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
-    .orFail()
-    .then((like) => res.send(like))
-    .catch(next);
+    .then((card) => {
+      if (!card) return next(new NotFoundError('Карточка не найдена'));
+      return res.send(card);
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') return next(new ValidationError('Некорректные данные'));
+      return next(err);
+    });
 }
 
 module.exports = {

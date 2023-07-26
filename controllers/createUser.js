@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
+const ValidationError = require('../utils/errors/validationError');
+const ConflictError = require('../utils/errors/conflictError');
 
 function createUser(req, res, next) {
   const {
@@ -24,7 +26,11 @@ function createUser(req, res, next) {
           avatar: user.avatar,
           email: user.email,
         }))
-        .catch(next);
+        .catch((err) => {
+          if (err.name === 'ValidationError') return next(new ValidationError('Некорректные данные при создании пользователя'));
+          if (err.code === 11000) return next(new ConflictError('Пользователь с таким Email уже существует'));
+          return next(err);
+        });
     });
 }
 module.exports = {

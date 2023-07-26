@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const { regular } = require('../utils/regular');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -18,6 +19,9 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+    validator: {
+      validator: (v) => regular.test(v),
+    },
   },
   email: {
     type: String,
