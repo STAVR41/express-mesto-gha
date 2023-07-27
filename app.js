@@ -8,6 +8,7 @@ const { createUser } = require('./controllers/createUser');
 const auth = require('./middlewares/auth');
 const errorHandler = require('./middlewares/handleError');
 const { validateLoginUser, validateCreateUser } = require('./middlewares/validations');
+const NotFoundError = require('./utils/errors/notFoundError');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 mongoose.connect(DB_URL);
@@ -25,10 +26,9 @@ app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
 
 app.use((req, res, next) => {
-  next(new Error('Маршрут не найден'));
+  next(new NotFoundError('Маршрут не найден'));
 });
 app.use(errors());
-
 app.use(errorHandler);
 
 app.listen(PORT);

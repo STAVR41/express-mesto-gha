@@ -28,7 +28,7 @@ function getCurrentUser(req, res, next) {
 function updateProfile(req, res, next) {
   const { name, about } = req.body;
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .orFail()
+    .orFail(() => new NotFoundError('Пользователь с указанным id не существует'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') return next(new ValidationError('Некорректные данные'));
@@ -38,7 +38,7 @@ function updateProfile(req, res, next) {
 function updateAvatar(req, res, next) {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .orFail()
+    .orFail(() => new NotFoundError('Пользователь с указанным id не существует'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') return next(new ValidationError('Некорректные данные'));

@@ -21,6 +21,7 @@ function createCard(req, res, next) {
 function deleteCardById(req, res, next) {
   const { _id } = req.user;
   Card.findById(req.params.id)
+    .orFail(() => new NotFoundError('Карточки с указанным id не существует'))
     .then((card) => {
       if (_id !== JSON.stringify(card.owner).slice(1, -1)) return next(new ForbiddenError('Вы можете удалять только свои карточки'));
       return Card.findByIdAndRemove(req.params.id)

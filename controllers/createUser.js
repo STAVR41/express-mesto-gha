@@ -31,7 +31,8 @@ function createUser(req, res, next) {
           if (err.code === 11000) return next(new ConflictError('Пользователь с таким Email уже существует'));
           return next(err);
         });
-    });
+    })
+    .catch(next);
 }
 module.exports = {
   createUser,
